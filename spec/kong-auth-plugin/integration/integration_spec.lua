@@ -1,7 +1,6 @@
 local helpers = require "spec.helpers"
 
-
-local PLUGIN_NAME = "myplugin"
+local PLUGIN_NAME = "kong-auth-plugin"
 
 
 for _, strategy in helpers.all_strategies() do if strategy ~= "cassandra" then
@@ -21,7 +20,10 @@ for _, strategy in helpers.all_strategies() do if strategy ~= "cassandra" then
       bp.plugins:insert {
         name = PLUGIN_NAME,
         route = { id = route1.id },
-        config = {},
+        config = {
+          auth_header_name = 'MyAuth',
+          auth_server_url="http://pongo-mockserver"
+        },
       }
 
       -- start kong
@@ -50,38 +52,29 @@ for _, strategy in helpers.all_strategies() do if strategy ~= "cassandra" then
     end)
 
 
-
-    describe("request", function()
-      it("gets a 'hello-world' header", function()
-        local r = client:get("/request", {
+    describe("when authorized", function()
+      it("proxies a request if remote server returns 200", function()
+        local r = client:get("/", {
           headers = {
-            host = "test1.com"
+            host = "test1.com",
+            MyAuth = 'secret-header'
           }
         })
         -- validate that the request succeeded, response status 200
         assert.response(r).has.status(200)
-        -- now check the request (as echoed by mockbin) to have the header
-        local header_value = assert.request(r).has.header("hello-world")
-        -- validate the value of that header
-        assert.equal("this is on a request", header_value)
       end)
     end)
 
-
-
-    describe("response", function()
-      it("gets a 'bye-world' header", function()
-        local r = client:get("/request", {
+    describe("when unauthorized", function()
+      it("returns 401", function()
+        local r = client:get("/", {
           headers = {
-            host = "test1.com"
+            host = "test1.com",
+            MyAuth = 'something-else'
           }
         })
         -- validate that the request succeeded, response status 200
-        assert.response(r).has.status(200)
-        -- now check the response to have the header
-        local header_value = assert.response(r).has.header("bye-world")
-        -- validate the value of that header
-        assert.equal("this is on the response", header_value)
+        assert.response(r).has.status(401)
       end)
     end)
 

@@ -1,0 +1,10 @@
+version: "3.5"
+
+services:
+  mockserver:
+    image: ${MOCKSERVER:-mockserver}
+    build: ${PONGO_WD:-.}/mockserver
+    networks:
+      pongo-test-network:
+        aliases:
+          - pongo-mockserver
