@@ -135,6 +135,29 @@ for _, strategy in helpers.all_strategies() do if strategy ~= "cassandra" then
         assert.equal(header1_value, header2_value)
       end)
     end)
+
+    describe("when cache is disabled", function()
+      it("contacts auth server for every request", function()
+        local response1 = client:get("/", {
+          headers = {
+            host = "test1.com",
+            MyAuth = 'cache-check'
+          }
+        })
+
+        local header1_value = assert.request(response1).has.header("x-authorization")
+
+        local response2 = client:get("/", {
+          headers = {
+            host = "test1.com",
+            MyAuth = 'cache-check'
+          }
+        })
+
+        local header2_value = assert.request(response2).has.header("x-authorization")
+        assert.is_not.equal(header1_value, header2_value)
+      end)
+    end)
   end)
 
 end end
