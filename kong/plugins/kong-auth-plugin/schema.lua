@@ -29,6 +29,15 @@ local schema = {
           { auth_server_configuration = {
             type = "record",
             fields = {
+              { cache_TTL = {
+                type = "number",
+                default = 0,
+                gt = -1
+              }},
+              { cache_enabled = {
+                type = "boolean",
+                default = false,
+              }},
               { auth_request_header_name = typedefs.header_name {
                 default = "Authorization"
               }},

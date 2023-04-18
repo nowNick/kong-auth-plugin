@@ -1,4 +1,5 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from uuid import uuid4
 import json
 
 hostName = "0.0.0.0"
@@ -19,10 +20,14 @@ class Handler(BaseHTTPRequestHandler):
         auth_header = self.headers.get("Authorization")
         self.log_message(f'All headers: {self.headers}')
         self.log_message(f'Got Auth header: {auth_header}')
-        if auth_header is None or auth_header != 'Bearer secret-header':
+        if auth_header is None:
             self.send_response(401)
             self._set_headers()
             self.wfile.write("unautorized".encode("utf-8"))
+        elif auth_header == 'Bearer secret-header':
+            self.send_response(200)
+            self._set_headers()
+            self.wfile.write(jwtToken.encode("utf-8"))
         elif auth_header == 'Bearer crash':
             self.send_response(500)
             self._set_headers()
@@ -31,10 +36,14 @@ class Handler(BaseHTTPRequestHandler):
             self.send_response(201)
             self._set_headers()
             self.wfile.write("ok".encode("utf-8"))
-        else:
+        elif auth_header == 'Bearer cache-check':
             self.send_response(200)
             self._set_headers()
-            self.wfile.write(jwtToken.encode("utf-8"))
+            self.wfile.write(str(uuid4()).encode("utf-8"))
+        else:
+            self.send_response(401)
+            self._set_headers()
+            self.wfile.write("unautorized".encode("utf-8"))
 
 
 server = HTTPServer((hostName, serverPort), Handler)

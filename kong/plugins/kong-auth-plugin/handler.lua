@@ -38,11 +38,21 @@ function plugin:access(plugin_conf)
 
   local auth_server_config = transform_auth_server_config(plugin_conf)
   local upstream_config = transform_upstream_config(plugin_conf)
+  local cache_enabled = plugin_conf.auth_server_configuration.cache_enabled
+  local cache_TTL = plugin_conf.auth_server_configuration.cache_TTL
 
   local auth_token = kong.request.get_headers()[plugin_conf.auth_header_name]
 
   kong.log.debug("Authorizing with " .. (auth_token or ""))
-  local jwt, err = authenticate(auth_server_config, auth_token)
+
+  local jwt
+  local err
+  if cache_enabled then
+    local cache_key = (kong.client.get_forwarded_ip() or kong.client.get_ip() .. "--" .. auth_token)
+    jwt, err = kong.cache:get(cache_key, {ttl = cache_TTL}, authenticate, auth_server_config, auth_token)
+  else
+    jwt, err = authenticate(auth_server_config, auth_token)
+  end
 
   if not jwt then
     kong.log.info("Rejecting request because: " .. err)

@@ -12,6 +12,9 @@ for _, strategy in helpers.all_strategies() do if strategy ~= "cassandra" then
       local route1 = bp.routes:insert({
         hosts = { "test1.com" },
       })
+      local cache_route = bp.routes:insert({
+        hosts = { "test-cache.com" },
+      })
       bp.plugins:insert {
         name = PLUGIN_NAME,
         route = { id = route1.id },
@@ -22,6 +25,17 @@ for _, strategy in helpers.all_strategies() do if strategy ~= "cassandra" then
             forwarded_header_name = "x-authorization"
           }
         },
+      }
+      bp.plugins:insert {
+        name = PLUGIN_NAME,
+        route = { id = cache_route.id },
+        config = {
+          auth_header_name = 'MyAuth',
+          auth_server_url="http://pongo-mockserver",
+          auth_server_configuration = {
+            cache_enabled = true
+          }
+        }
       }
 
       assert(helpers.start_kong({
@@ -96,6 +110,29 @@ for _, strategy in helpers.all_strategies() do if strategy ~= "cassandra" then
         })
 
         assert.response(r).has.status(401)
+      end)
+    end)
+
+    describe("when cache is enabled", function()
+      it("does not contact auth server repeatedly", function()
+        local response1 = client:get("/", {
+          headers = {
+            host = "test-cache.com",
+            MyAuth = 'cache-check'
+          }
+        })
+
+        local header1_value = assert.request(response1).has.header("authorization")
+
+        local response2 = client:get("/", {
+          headers = {
+            host = "test-cache.com",
+            MyAuth = 'cache-check'
+          }
+        })
+
+        local header2_value = assert.request(response2).has.header("authorization")
+        assert.equal(header1_value, header2_value)
       end)
     end)
   end)
