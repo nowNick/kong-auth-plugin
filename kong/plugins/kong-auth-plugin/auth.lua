@@ -19,17 +19,17 @@ end
 
 local function validate_response(response, endpoint)
   if not response then
-    kong.log.error("Could not access auth endpoint: " .. endpoint)
+    kong.log.err("Could not access auth endpoint: " .. endpoint)
     unauthorize_request()
   elseif response.status ~= 200 then
-    kong.log.error("Auth endpoint " .. endpoint .. " responeded with status: " .. response.status)
+    kong.log.err("Auth endpoint " .. endpoint .. " responeded with status: " .. response.status)
     unauthorize_request()
   end
 end
 
 local function validate_token(token)
   if not token then
-    kong.log.error("no auth token provided")
+    kong.log.err("no auth token provided")
     unauthorize_request()
   end
 end

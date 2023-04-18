@@ -2,7 +2,7 @@ local PLUGIN_NAME = "kong-auth-plugin"
 
 local kong_wrapper = {
   log = {
-    error = function (msg) print(msg) end,
+    err = function (msg) print(msg) end,
     notice = function (msg) print(msg) end
   },
   response = {
@@ -39,8 +39,6 @@ describe(PLUGIN_NAME .. ": (auth) #unit", function()
   teardown(function()
     package.loaded['authenticate'] = nil
     package.loaded['resty.http'] = nil
-    http = nil
-    authenticate = nil
   end)
 
   it("rejects authentication when no token", function()
