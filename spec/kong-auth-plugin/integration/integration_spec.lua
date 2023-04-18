@@ -17,7 +17,10 @@ for _, strategy in helpers.all_strategies() do if strategy ~= "cassandra" then
         route = { id = route1.id },
         config = {
           auth_header_name = 'MyAuth',
-          auth_server_url="http://pongo-mockserver"
+          auth_server_url="http://pongo-mockserver",
+          upstream_server_configuration = {
+            forwarded_header_name = "x-authorization"
+          }
         },
       }
 
@@ -43,8 +46,8 @@ for _, strategy in helpers.all_strategies() do if strategy ~= "cassandra" then
 
 
     describe("when authorized", function()
-      it("proxies a request if remote server returns 200", function()
-        local r = client:get("/", {
+      it("proxies a request if remote server with JWT token", function()
+        local r = client:get("/request", {
           headers = {
             host = "test1.com",
             MyAuth = 'secret-header'
@@ -52,6 +55,8 @@ for _, strategy in helpers.all_strategies() do if strategy ~= "cassandra" then
         })
 
         assert.response(r).has.status(200)
+        local header_Value = assert.request(r).has.header("x-authorization")
+        assert.equal(header_Value, "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c")
       end)
     end)
 
@@ -93,7 +98,6 @@ for _, strategy in helpers.all_strategies() do if strategy ~= "cassandra" then
         assert.response(r).has.status(401)
       end)
     end)
-
   end)
 
 end end

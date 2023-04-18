@@ -1,16 +1,5 @@
 local PLUGIN_NAME = "kong-auth-plugin"
 
-local kong_wrapper = {
-  log = {
-    err = function (msg) print(msg) end,
-    notice = function (msg) print(msg) end
-  },
-  response = {
-    exit = function (code) error(code) end,
-    error = function (code) error(code) end
-  }
-}
-
 local auth_configuration = {
   endpoint = "localhost",
   method = "POST",
@@ -23,7 +12,6 @@ describe(PLUGIN_NAME .. ": (auth) #unit", function()
   local http
 
   setup(function()
-    _G.kong = mock(kong_wrapper)
     package.loaded['authenticate'] = nil
     package.loaded['resty.http'] = nil
 
@@ -42,10 +30,14 @@ describe(PLUGIN_NAME .. ": (auth) #unit", function()
   end)
 
   it("rejects authentication when no token", function()
-    assert.has.errors(function() authenticate(auth_configuration, nil) end, 401)
+    local jwt, err = authenticate(auth_configuration, nil)
+    assert.is_nil(jwt)
+    assert.is_truthy(err)
   end)
 
   it("when config and token", function()
-    assert.is_truthy(authenticate(auth_configuration, 'abc'))
+    local jwt, err = authenticate(auth_configuration, 'abc')
+    assert.is_truthy(jwt)
+    assert.is_nil(err)
   end)
 end)
